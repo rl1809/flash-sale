@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS inventory (
+    item_id VARCHAR(255) PRIMARY KEY,
+    stock INT NOT NULL DEFAULT 0,
+    version INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS orders (
+    id VARCHAR(255) PRIMARY KEY,
+    item_id VARCHAR(255) NOT NULL,
+    user_id VARCHAR(255) NOT NULL,
+    quantity INT NOT NULL DEFAULT 1,
+    status VARCHAR(50) NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_item_id (item_id),
+    INDEX idx_user_id (user_id)
+);
+
+INSERT INTO inventory (item_id, stock, version) VALUES ('iphone-15', 100, 0);
