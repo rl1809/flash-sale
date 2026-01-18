@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package flashsale;
+
+option go_package = "github.com/rl1809/flash-sale/internal/adapter/handler/pb";
+
+service OrderService {
+  rpc Purchase(PurchaseRequest) returns (PurchaseResponse);
+}
+
+message PurchaseRequest {
+  string user_id = 1;
+  string item_id = 2;
+  int32 quantity = 3;
+}
+
+message PurchaseResponse {
+  bool success = 1;
+  string message = 2;
+  string order_id = 3;
+}
