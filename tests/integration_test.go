@@ -200,9 +200,11 @@ func TestIntegration_IdempotencyPreventsDoubleOrder(t *testing.T) {
 
 	ctx := context.Background()
 	itemID := "idempotency-test-item"
+	requestID := "same-request-id-" + uuid.New().String()
 
 	// Setup
 	env.redis.Del(ctx, "stock:"+itemID)
+	env.redis.Del(ctx, "idempotency:"+requestID)
 	env.cache.SetStock(ctx, itemID, 10)
 
 	svc := service.NewOrderService(env.cache, 100)
@@ -212,8 +214,6 @@ func TestIntegration_IdempotencyPreventsDoubleOrder(t *testing.T) {
 		for range svc.GetOrderQueue() {
 		}
 	}()
-
-	requestID := "same-request-id"
 
 	// First call
 	err := svc.Purchase(ctx, requestID, "user", itemID, 1)
