@@ -18,7 +18,7 @@ func NewGRPCHandler(orderService *service.OrderService) *GRPCHandler {
 }
 
 func (h *GRPCHandler) Purchase(ctx context.Context, req *pb.PurchaseRequest) (*pb.PurchaseResponse, error) {
-	err := h.orderService.Purchase(ctx, req.GetUserId(), req.GetItemId(), int(req.GetQuantity()))
+	err := h.orderService.Purchase(ctx, req.GetRequestId(), req.GetUserId(), req.GetItemId(), int(req.GetQuantity()))
 	if err != nil {
 		if errors.Is(err, service.ErrDuplicateRequest) {
 			return &pb.PurchaseResponse{

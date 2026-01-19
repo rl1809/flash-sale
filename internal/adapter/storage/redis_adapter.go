@@ -49,6 +49,11 @@ func (r *RedisAdapter) DecrementStock(ctx context.Context, itemID string, quanti
 	return result == 1, nil
 }
 
+func (r *RedisAdapter) IncrementStock(ctx context.Context, itemID string, quantity int) error {
+	key := stockKeyPrefix + itemID
+	return r.client.IncrBy(ctx, key, int64(quantity)).Err()
+}
+
 func (r *RedisAdapter) SetIdempotency(ctx context.Context, key string) (bool, error) {
 	ok, err := r.client.SetNX(ctx, key, 1, idempotencyKeyTTL).Result()
 	if err != nil {

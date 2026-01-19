@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 
 	"github.com/rl1809/flash-sale/internal/adapter/storage"
@@ -34,7 +35,7 @@ func main() {
 
 	// Clear previous test data
 	rdb.Del(ctx, "stock:"+itemID)
-	keys, _ := rdb.Keys(ctx, "order:user-*:"+itemID).Result()
+	keys, _ := rdb.Keys(ctx, "idempotency:*").Result()
 	for _, k := range keys {
 		rdb.Del(ctx, k)
 	}
@@ -67,7 +68,8 @@ func main() {
 		go func(userID int) {
 			defer wg.Done()
 
-			err := orderService.Purchase(ctx, fmt.Sprintf("user-%d", userID), itemID, 1)
+			requestID := uuid.New().String()
+			err := orderService.Purchase(ctx, requestID, fmt.Sprintf("user-%d", userID), itemID, 1)
 			if err == nil {
 				successCount.Add(1)
 			} else {

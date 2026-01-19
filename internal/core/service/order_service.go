@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/rl1809/flash-sale/internal/port"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/rl1809/flash-sale/internal/core/domain"
+	"github.com/rl1809/flash-sale/internal/port"
 )
 
 var (
@@ -27,8 +28,8 @@ func NewOrderService(cache port.CacheRepository, queueSize int) *OrderService {
 	}
 }
 
-func (s *OrderService) Purchase(ctx context.Context, userID, itemID string, quantity int) error {
-	idempotencyKey := fmt.Sprintf("order:%s:%s", userID, itemID)
+func (s *OrderService) Purchase(ctx context.Context, requestID, userID, itemID string, quantity int) error {
+	idempotencyKey := fmt.Sprintf("idempotency:%s", requestID)
 
 	ok, err := s.cache.SetIdempotency(ctx, idempotencyKey)
 	if err != nil {
@@ -47,7 +48,7 @@ func (s *OrderService) Purchase(ctx context.Context, userID, itemID string, quan
 	}
 
 	order := domain.Order{
-		ID:        fmt.Sprintf("%s-%s-%d", userID, itemID, time.Now().UnixNano()),
+		ID:        uuid.New().String(),
 		UserID:    userID,
 		ItemID:    itemID,
 		Quantity:  quantity,

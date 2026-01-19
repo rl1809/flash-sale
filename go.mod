@@ -4,6 +4,7 @@ go 1.25.6
 
 require (
 	github.com/go-sql-driver/mysql v1.9.3
+	github.com/google/uuid v1.6.0
 	github.com/redis/go-redis/v9 v9.17.2
 	google.golang.org/grpc v1.78.0
 )

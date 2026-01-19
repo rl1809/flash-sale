@@ -80,7 +80,7 @@ func main() {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
-			workerLoop(id, orderService.GetOrderQueue(), mysqlAdapter)
+			workerLoop(id, orderService.GetOrderQueue(), mysqlAdapter, redisAdapter)
 		}(i)
 	}
 	log.Printf("started %d workers", workerCount)
@@ -125,14 +125,23 @@ func main() {
 	log.Println("connections closed")
 }
 
-func workerLoop(id int, queue <-chan domain.Order, db port.DatabaseRepository) {
+func workerLoop(id int, queue <-chan domain.Order, db port.DatabaseRepository, cache port.CacheRepository) {
 	for order := range queue {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+
 		if err := db.CreateOrder(ctx, order); err != nil {
 			log.Printf("worker %d: failed to save order %s: %v", id, order.ID, err)
+
+			// Rollback: restore stock in Redis
+			if rollbackErr := cache.IncrementStock(ctx, order.ItemID, order.Quantity); rollbackErr != nil {
+				log.Printf("worker %d: CRITICAL rollback failed for order %s: %v", id, order.ID, rollbackErr)
+			} else {
+				log.Printf("worker %d: rolled back stock for order %s", id, order.ID)
+			}
 		} else {
 			log.Printf("worker %d: saved order %s", id, order.ID)
 		}
+
 		cancel()
 	}
 }
