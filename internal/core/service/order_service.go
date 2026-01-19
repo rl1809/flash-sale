@@ -4,11 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"github.com/rl1809/flash-sale/internal/port"
 	"time"
 
 	"github.com/rl1809/flash-sale/internal/core/domain"
-	"github.com/rl1809/flash-sale/internal/port"
 )
 
 var (
@@ -17,8 +16,8 @@ var (
 )
 
 type OrderService struct {
-	cache       port.CacheRepository
-	orderQueue  chan domain.Order
+	cache      port.CacheRepository
+	orderQueue chan domain.Order
 }
 
 func NewOrderService(cache port.CacheRepository, queueSize int) *OrderService {
@@ -68,24 +67,4 @@ func (s *OrderService) GetOrderQueue() <-chan domain.Order {
 
 func (s *OrderService) Close() {
 	close(s.orderQueue)
-}
-
-func StartWorkers(count int, queue <-chan domain.Order, db port.DatabaseRepository) {
-	for i := 0; i < count; i++ {
-		go worker(i, queue, db)
-	}
-}
-
-func worker(id int, queue <-chan domain.Order, db port.DatabaseRepository) {
-	for order := range queue {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-
-		if err := db.CreateOrder(ctx, order); err != nil {
-			log.Printf("worker %d: failed to save order %s: %v", id, order.ID, err)
-		} else {
-			log.Printf("worker %d: saved order %s", id, order.ID)
-		}
-
-		cancel()
-	}
 }
