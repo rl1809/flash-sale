@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
@@ -24,6 +25,7 @@ import (
 )
 
 const (
+	httpPort     = ":8080"
 	grpcPort     = ":50051"
 	mysqlDSN     = "root:root@tcp(localhost:3306)/flashsale?parseTime=true"
 	redisAddr    = "localhost:6379"
@@ -97,9 +99,27 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("grpc server listening on %s", grpcPort)
+		log.Printf("gRPC server listening on %s", grpcPort)
 		if err := grpcServer.Serve(lis); err != nil {
-			log.Printf("grpc server error: %v", err)
+			log.Printf("gRPC server error: %v", err)
+		}
+	}()
+
+	// Initialize HTTP server
+	httpHandler := handler.NewHTTPHandler(orderService)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/health", httpHandler.HealthCheck)
+	mux.HandleFunc("/api/purchase", httpHandler.Purchase)
+
+	httpServer := &http.Server{
+		Addr:    httpPort,
+		Handler: mux,
+	}
+
+	go func() {
+		log.Printf("HTTP server listening on %s", httpPort)
+		if err := httpServer.ListenAndServe(); err != http.ErrServerClosed {
+			log.Printf("HTTP server error: %v", err)
 		}
 	}()
 
@@ -110,9 +130,15 @@ func main() {
 
 	log.Println("shutting down...")
 
+	// Stop HTTP server
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer shutdownCancel()
+	httpServer.Shutdown(shutdownCtx)
+	log.Println("HTTP server stopped")
+
 	// Stop gRPC server
 	grpcServer.GracefulStop()
-	log.Println("grpc server stopped")
+	log.Println("gRPC server stopped")
 
 	// Close order queue and wait for workers
 	orderService.Close()
