@@ -20,6 +20,7 @@ import (
 	"github.com/rl1809/flash-sale/internal/adapter/storage"
 	"github.com/rl1809/flash-sale/internal/core/domain"
 	"github.com/rl1809/flash-sale/internal/core/service"
+	"github.com/rl1809/flash-sale/internal/port"
 )
 
 const (
@@ -124,7 +125,7 @@ func main() {
 	log.Println("connections closed")
 }
 
-func workerLoop(id int, queue <-chan domain.Order, db *storage.MySQLAdapter) {
+func workerLoop(id int, queue <-chan domain.Order, db port.DatabaseRepository) {
 	for order := range queue {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		if err := db.CreateOrder(ctx, order); err != nil {
